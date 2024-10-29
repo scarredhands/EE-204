@@ -294,7 +294,6 @@ function drawConnection(connection, color) {
     ctx.lineWidth = 2;
     ctx.stroke();
 }
-
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -307,19 +306,22 @@ function draw() {
         drawConnection(tempConnection, 'blue');
     }
     
-    // Draw components
+    // Draw components with symbols
     components.forEach(component => {
-        // Draw component box
-        ctx.fillStyle = component.color;
-        ctx.fillRect(component.x, component.y, component.width, component.height);
-        
-        // Draw component label
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(component.label, 
-            component.x + component.width/2 - 5, 
-            component.y + component.height/2 + 5
-        );
+        switch (component.type) {
+            case 'resistor':
+                drawResistor(component);
+                break;
+            case 'capacitor':
+                drawCapacitor(component);
+                break;
+            case 'inductor':
+                drawInductor(component);
+                break;
+            case 'battery':
+                drawBattery(component);
+                break;
+        }
         
         // Draw component value if it exists
         if (component.value) {
@@ -327,12 +329,117 @@ function draw() {
             ctx.font = '12px Arial';
             const valueText = `${component.value}${component.unit}`;
             ctx.fillText(valueText, 
-                component.x + component.width/2 - ctx.measureText(valueText).width/2, 
+                component.x + component.width / 2 - ctx.measureText(valueText).width / 2, 
                 component.y + component.height + 15
             );
         }
     });
 }
+
+// Function to draw resistor symbol
+function drawResistor(component) {
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let x = component.x;
+    let y = component.y;
+    ctx.moveTo(x, y + component.height / 2);
+    for (let i = 0; i < 5; i++) {
+        x += component.width / 5;
+        y = (i % 2 === 0) ? component.y : component.y + component.height;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(component.x + component.width, component.y + component.height / 2);
+    ctx.stroke();
+}
+
+// Function to draw capacitor symbol
+function drawCapacitor(component) {
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let x = component.x;
+    let y = component.y;
+    ctx.moveTo(x, y + component.height / 2);
+    ctx.lineTo(x + component.width / 3, y + component.height / 2);
+    ctx.moveTo(x + component.width * 2 / 3, y);
+    ctx.lineTo(x + component.width * 2 / 3, y + component.height);
+    ctx.moveTo(x + component.width * 2 / 3 + component.width / 6, y);
+    ctx.lineTo(x + component.width * 2 / 3 + component.width / 6, y + component.height);
+    ctx.stroke();
+}
+
+// Function to draw inductor symbol
+function drawInductor(component) {
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let x = component.x;
+    let y = component.y + component.height / 2;
+    ctx.moveTo(x, y);
+    for (let i = 0; i < 4; i++) {
+        x += component.width / 4;
+        ctx.arc(x, y, component.height / 4, Math.PI, 0, true);
+    }
+    ctx.stroke();
+}
+
+// Function to draw battery symbol
+function drawBattery(component) {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    let x = component.x;
+    let y = component.y;
+    ctx.beginPath();
+    ctx.moveTo(x, y + component.height / 2);
+    ctx.lineTo(x + component.width / 4, y + component.height / 2);
+    ctx.moveTo(x + component.width / 2 - 5, y);
+    ctx.lineTo(x + component.width / 2 - 5, y + component.height);
+    ctx.moveTo(x + component.width / 2 + 5, y + component.height / 4);
+    ctx.lineTo(x + component.width / 2 + 5, y + component.height * 3 / 4);
+    ctx.moveTo(x + component.width * 3 / 4, y + component.height / 2);
+    ctx.lineTo(x + component.width, y + component.height / 2);
+    ctx.stroke();
+}
+
+// function draw() {
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+//     // Draw connections
+//     connections.forEach(connection => {
+//         drawConnection(connection, 'red');
+//     });
+    
+//     if (tempConnection) {
+//         drawConnection(tempConnection, 'blue');
+//     }
+    
+//     // Draw components
+//     components.forEach(component => {
+//         // Draw component box
+//         ctx.fillStyle = component.color;
+//         ctx.fillRect(component.x, component.y, component.width, component.height);
+        
+//         // Draw component label
+//         ctx.fillStyle = 'white';
+//         ctx.font = 'bold 14px Arial';
+//         ctx.fillText(component.label, 
+//             component.x + component.width/2 - 5, 
+//             component.y + component.height/2 + 5
+//         );
+        
+//         // Draw component value if it exists
+//         if (component.value) {
+//             ctx.fillStyle = 'black';
+//             ctx.font = '12px Arial';
+//             const valueText = `${component.value}${component.unit}`;
+//             ctx.fillText(valueText, 
+//                 component.x + component.width/2 - ctx.measureText(valueText).width/2, 
+//                 component.y + component.height + 15
+//             );
+//         }
+//     });
+// }
 
 // Prevent context menu on right-click
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
