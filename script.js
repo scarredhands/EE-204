@@ -54,6 +54,19 @@ connectionBtn.id = 'connectionBtn';
 connectionBtn.textContent = 'Connection Mode: OFF';
 document.querySelector('.toolbar').appendChild(connectionBtn);
 
+
+// Create a simulate button and add it to the toolbar
+const simulateBtn = document.createElement('button');
+simulateBtn.className = 'button';
+simulateBtn.id = 'simulateBtn';
+simulateBtn.textContent = 'Simulate Circuit';
+document.querySelector('.toolbar').appendChild(simulateBtn);
+
+// Add event listener to the simulate button
+simulateBtn.addEventListener('click', () => {
+    simulateCircuit();
+});
+
 // Toggle connection mode
 connectionBtn.addEventListener('click', () => {
     connectionMode = !connectionMode;
@@ -294,6 +307,14 @@ function drawConnection(connection, color) {
     ctx.lineWidth = 2;
     ctx.stroke();
 }
+
+function displaySimulationResults(data) {
+    const resultDiv = document.getElementById('simulationResults');
+    resultDiv.innerHTML = `
+        <p>Voltage at Node N001: ${data.output.voltage} V</p>
+    `;
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -401,6 +422,56 @@ function drawBattery(component) {
     ctx.lineTo(x + component.width, y + component.height / 2);
     ctx.stroke();
 }
+
+function generateLTSpiceFile() {
+    let ltspiceCircuit = ".title Circuit Simulation\n";
+
+    components.forEach(component => {
+        switch (component.type) {
+            case 'resistor':
+                ltspiceCircuit += `R${component.label} ${component.x} ${component.y} ${component.value}\n`;
+                break;
+            case 'capacitor':
+                ltspiceCircuit += `C${component.label} ${component.x} ${component.y} ${component.value}\n`;
+                break;
+            case 'battery':
+                ltspiceCircuit += `V${component.label} ${component.x} ${component.y} ${component.value}\n`;
+                break;
+            // Add more components as needed
+        }
+    });
+
+    // Include connections here (you would need to interpret the connections between components)
+
+    return ltspiceCircuit;
+}
+
+function simulateCircuit() {
+    const circuitFile = generateLTSpiceFile();
+
+    fetch('http://localhost:3000/simulate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ circuitFile })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Simulation Results:', data.output);
+        displaySimulationResults(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+
 
 // function draw() {
 //     ctx.clearRect(0, 0, canvas.width, canvas.height);
