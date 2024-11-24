@@ -1,34 +1,110 @@
 import React, { useState } from 'react';
 import { Trash2, Plus, Play } from 'lucide-react';
 
+const ResultsDisplay = ({ output }) => {
+  if (!output) return null;
+
+  // Parse the output string to extract different sections
+  const parseOutput = (outputStr) => {
+    const sections = {
+      netlistReport: [],
+      parsedValues: [],
+      equations: [],
+      solutions: []
+    };
+
+    const lines = outputStr.split('\n');
+    let currentSection = 'netlistReport';
+
+    lines.forEach(line => {
+      if (line.startsWith('Parsed Element Values:')) {
+        currentSection = 'parsedValues';
+      } else if (line.startsWith('[Eq(')) {
+        currentSection = 'equations';
+        // Clean up equation formatting
+        const cleanedEq = line
+          .replace('[Eq(', '')
+          .replace(')]', '')
+          .split('), Eq(')
+          .map(eq => eq.replace(/\*\*/g, '^')
+            .replace(/\*/g, '×')
+            .trim());
+        sections.equations = cleanedEq;
+      } else if (/^-?\d+\.\d{4}\s*$/.test(line.trim())) {
+        currentSection = 'solutions';
+        sections.solutions.push(line.trim());
+      } else if (currentSection === 'parsedValues' && line.includes(':')) {
+        sections.parsedValues.push(line.trim());
+      } else if (currentSection === 'netlistReport' && line.trim()) {
+        sections.netlistReport.push(line.trim());
+      }
+    });
+
+    return sections;
+  };
+
+  const { netlistReport, parsedValues, equations, solutions } = parseOutput(output);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Circuit Statistics</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {netlistReport.slice(0, 15).map((line, index) => (
+            <div key={index} className="text-sm">
+              {line}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Component Values</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {parsedValues.map((value, index) => (
+            <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+              {value}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Circuit Equations</h3>
+        <div className="space-y-2">
+          {equations.map((eq, index) => (
+            <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+              {eq} = 0
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Solution Values</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {solutions.map((value, index) => (
+            <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+              {`Nodal voltages and current in order: ${value}`}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function CircuitAnalyzer() {
   const [elements, setElements] = useState([]);
   const [equations, setEquations] = useState([]);
   const [activeTab, setActiveTab] = useState('builder');
-  // const [netlist, setNetlist] = useState('');
-  // const [result, setResult] = useState(null);
-  // const [error, setError] = useState(null);
 
-
-  // const handleNetlistChange = (e) => {
-  //   setNetlist(e.target.value);
-  // };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setError(null);
-  //   setResult(null);
   const elementTypes = [
     { type: 'R', name: 'Resistor', valueUnit: 'Ω' },
     { type: 'L', name: 'Inductor', valueUnit: 'H' },
     { type: 'C', name: 'Capacitor', valueUnit: 'F' },
     { type: 'V', name: 'Voltage Source', valueUnit: 'V' },
-    { type: 'I', name: 'Current Source', valueUnit: 'A' },
-    { type: 'E', name: 'VCVS', valueUnit: 'gain' },
-    { type: 'G', name: 'VCCS', valueUnit: 'gain' },
-    { type: 'H', name: 'CCVS', valueUnit: 'gain' },
-    { type: 'F', name: 'CCCS', valueUnit: 'gain' },
-    { type: 'O', name: 'Op Amp', valueUnit: 'gain' }
+    { type: 'I', name: 'Current Source', valueUnit: 'A' }
   ];
 
   const addElement = (type) => {
@@ -84,22 +160,27 @@ export default function CircuitAnalyzer() {
       const netlist = generateNetlist();
       console.log(netlist);
 
-      // Send the netlist to the backend
+    // Prepare the POST request body
+    const requestBody = {
+      netlist: netlist
+    };
+
       const response = await fetch('http://localhost:5001/process-netlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ netlist }) // Send the netlist as JSON
+        body: JSON.stringify(requestBody)
       });
-      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
       if (!response.ok) {
         throw new Error('Failed to analyze circuit');
       }
   
       const data = await response.json();
       if (data.status === 'success') {
-        setEquations([`Equations:\n${data.results.output}`]);
+        setEquations([data.results.output]);
         setActiveTab('results');
       } else {
         setEquations([`Error: ${data.message}`]);
@@ -109,22 +190,6 @@ export default function CircuitAnalyzer() {
       setEquations([`Error: ${error.message}`]);
     }
   };
-   // Automatically trigger analysis when the component loads
-  //  React.useEffect(() => {
-  //   analyzeCircuit();
-  // }, []);
-
-  // return (
-  //   <div className="max-w-6xl mx-auto p-6">
-  //     <div className="bg-gray-50 p-6 rounded">
-  //       <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
-  //       <pre className="whitespace-pre-wrap font-mono bg-white p-4 rounded border">
-  //         {equations.join('\n')}
-  //       </pre>
-  //     </div>
-  //   </div>
-  // );
-  
 
   const renderElementInputs = (element) => {
     const baseInputs = (
@@ -289,11 +354,10 @@ export default function CircuitAnalyzer() {
       ) : (
         <div className="bg-gray-50 p-6 rounded">
           <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
-          <pre className="whitespace-pre-wrap font-mono bg-white p-4 rounded border">
-            {equations.join('\n')}
-          </pre>
+          <ResultsDisplay output={equations[0]} />
         </div>
       )}
     </div>
   );
 }
+

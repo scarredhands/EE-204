@@ -19,9 +19,20 @@ num_cccs = 0
 num_ccvs = 0
 num_cpld_ind = 0 # number of coupled inductors
 
-fn = 'test_1'    #coupled_ind'   #RCL circuit'     #opamp_test_circuit_426'   #example48-1a'
-fd1 = open(fn+'.net','r')
-content = fd1.readlines()
+
+# Make sure the script uses the NETLIST_PATH environment variable
+netlist_path = os.getenv('NETLIST_PATH')
+if netlist_path:
+    with open(netlist_path, 'r') as file:
+        content = file.readlines()
+    # Process the content here
+else:
+    print("Error: NETLIST_PATH environment variable is not set")
+
+
+# fn = 'test_1'    #coupled_ind'   #RCL circuit'     #opamp_test_circuit_426'   #example48-1a'
+# fd1 = open(fn+'.net','r')
+# content = fd1.readlines()
 content = [x.strip() for x in content]  #remove leading and trailing white space
 # remove empty lines
 while '' in content:
@@ -652,7 +663,7 @@ for i in range(n+m):
 print(equ)   # display the equations
 
 # Parse the netlist and extract values
-netlist_file = 'test_1.net'
+netlist_file = netlist_path
 element_values = {}  # Dictionary to store element name-value pairs
 
 with open(netlist_file, 'r') as file:

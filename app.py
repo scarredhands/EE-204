@@ -7,8 +7,11 @@ import sys
 from pathlib import Path
 import logging
 import traceback
+from flask_cors import CORS
 
 app = Flask(__name__)
+# Enable CORS for all routes and origins
+CORS(app)
 
 @app.route('/')
 def home():
