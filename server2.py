@@ -686,12 +686,94 @@ for k, v in element_values.items():
 # Add missing substitutions for remaining symbols
 element_values['ea1'] = 2.0  # Example numerical value for 'ea1'
 element_values['f1'] = 2.0   # Example numerical value for 'f1'
+element_values['s']=1
+# Add this after your element_values dictionary is populated but before the matrix conversion
+
+# def evaluate_matrix_at_frequency(A, Z, element_values, frequency=0):
+#     """
+#     Evaluate the system at a specific frequency
+#     Args:
+#         A: Symbolic matrix A
+#         Z: Symbolic vector Z
+#         element_values: Dictionary of component values
+#         frequency: Frequency in Hz (default 0 for DC analysis)
+#     """
+#     # Calculate s = jω for the given frequency
+#     w = 2 * np.pi * frequency
+#     s_value = complex(0, w)  # For DC analysis, s = 0
+    
+#     # First substitute s with its value
+#     values_with_s = element_values.copy()
+#     values_with_s['s'] = s_value
+    
+#     # Now evaluate the matrices
+#     A_num = A.subs(values_with_s).evalf()
+#     Z_num = Matrix(Z).subs(values_with_s).evalf()
+    
+#     # Convert to numpy arrays, taking only the real part for DC analysis
+#     # or use abs() for AC analysis if needed
+#     if frequency == 0:
+#         A_np = np.array(A_num.tolist(), dtype=float)
+#         Z_np = np.array(Z_num.tolist(), dtype=float).flatten()
+#     else:
+#         # For AC analysis, we might want to keep the complex values
+#         A_np = np.array(A_num.tolist(), dtype=complex)
+#         Z_np = np.array(Z_num.tolist(), dtype=complex).flatten()
+    
+#     return A_np, Z_np
+
+# Replace your existing conversion code with:
+# try:
+#     # For DC analysis (frequency = 0)
+#     A_np, Z_np = evaluate_matrix_at_frequency(A, Z, element_values, frequency=0)
+    
+#     # Solve the system
+#     X_np = np.linalg.solve(A_np, Z_np)
+    
+#     # Print results
+#     print("\nSolution at DC:")
+#     for i, val in enumerate(X_np):
+#         if i < num_nodes:
+#             print(f"v{i+1} = {val:.4f} V")
+#         else:
+#             print(f"i{i-num_nodes+1} = {val:.4f} A")
+            
+# except np.linalg.LinAlgError as e:
+#     print(f"Error solving the system: {e}")
+# except Exception as e:
+#     print(f"Error during matrix conversion: {e}")
+    
+# # If you want to analyze at multiple frequencies:
+# frequencies = [0, 60, 1000]  # Example frequencies in Hz
+# for freq in frequencies:
+#     try:
+#         print(f"\nAnalysis at {freq} Hz:")
+#         A_np, Z_np = evaluate_matrix_at_frequency(A, Z, element_values, frequency=freq)
+#         X_np = np.linalg.solve(A_np, Z_np)
+        
+#         # Print results
+#         for i, val in enumerate(X_np):
+#             if freq == 0:
+#                 val_str = f"{val:.4f}"
+#             else:
+#                 val_str = f"{abs(val):.4f}∠{np.angle(val, deg=True):.1f}°"
+                
+#             if i < num_nodes:
+#                 print(f"v{i+1} = {val_str}")
+#             else:
+#                 print(f"i{i-num_nodes+1} = {val_str}")
+                
+#     except Exception as e:
+#         print(f"Error at {freq} Hz: {e}")
 
 # Re-substitute and evaluate
 A_num = A.subs(element_values).evalf()
 Z_num = Matrix(Z).subs(element_values).evalf()
 
+
+
 # Convert to NumPy
+
 A_np = np.array(A_num.tolist(), dtype=float)
 Z_np = np.array(Z_num.tolist(), dtype=float).flatten()
 
