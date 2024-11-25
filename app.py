@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
-
+from graphviz import Digraph
+from flask import send_from_directory
 import os
 import subprocess
 import tempfile
@@ -24,10 +25,31 @@ def favicon():
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def generate_circuit_diagram(netlist_content):
+    """Generate a circuit diagram image from the netlist."""
+    diagram = Digraph(format='png')
+    diagram.attr('node', shape='circle')
+
+    for line in netlist_content.split('\n'):
+        if not line.strip():
+            continue
+        tokens = line.split()
+        element, p_node, n_node = tokens[:3]
+        diagram.node(p_node)
+        diagram.node(n_node)
+        diagram.edge(p_node, n_node, label=element)
+
+    # Save the diagram to the static folder
+    output_path = 'static/circuit_diagram'
+    diagram.render(output_path, cleanup=True)
+    return f'/static/circuit_diagram.png'
+
 class NetlistProcessor:
     def __init__(self, upload_folder="temp_netlists"):
         self.upload_folder = upload_folder
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
+
+    
     
     def save_netlist(self, netlist_content, filename="temp_netlist.net"):
         """Save the netlist content to a temporary file"""
@@ -117,13 +139,17 @@ def process_netlist():
         
         # Process the netlist
         result = processor.process_netlist(filepath)
-        
+
+         # Generate the circuit diagram
+        diagram_path = generate_circuit_diagram(netlist_content)
+
         # Clean up
         processor.cleanup(filepath)
         
         return jsonify({
             'status': 'success',
-            'results': result
+            'results': result,
+            'circuitDiagram': diagram_path  # Add diagram path to response
         })
 
     except Exception as e:
@@ -136,6 +162,11 @@ def process_netlist():
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
+
+@app.route('/static/<path:filename>')
+def serve_static_file(filename):
+    return send_from_directory('.', filename)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)

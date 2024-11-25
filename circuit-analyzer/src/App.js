@@ -1,34 +1,31 @@
 import React, { useState } from 'react';
 import { Trash2, Plus, Play } from 'lucide-react';
 
-const ResultsDisplay = ({ output }) => {
+
+const ResultsDisplay = ({ output, circuitDiagramUrl }) => {
   if (!output) return null;
 
-  // Parse the output string to extract different sections
   const parseOutput = (outputStr) => {
     const sections = {
       netlistReport: [],
       parsedValues: [],
       equations: [],
-      solutions: []
+      solutions: [],
     };
 
     const lines = outputStr.split('\n');
     let currentSection = 'netlistReport';
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       if (line.startsWith('Parsed Element Values:')) {
         currentSection = 'parsedValues';
       } else if (line.startsWith('[Eq(')) {
         currentSection = 'equations';
-        // Clean up equation formatting
         const cleanedEq = line
           .replace('[Eq(', '')
           .replace(')]', '')
           .split('), Eq(')
-          .map(eq => eq.replace(/\*\*/g, '^')
-            .replace(/\*/g, '×')
-            .trim());
+          .map((eq) => eq.replace(/\*\*/g, '^').replace(/\*/g, '×').trim());
         sections.equations = cleanedEq;
       } else if (/^-?\d+\.\d{4}\s*$/.test(line.trim())) {
         currentSection = 'solutions';
@@ -47,6 +44,15 @@ const ResultsDisplay = ({ output }) => {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Circuit Diagram</h3>
+        {circuitDiagramUrl ? (
+          <img src={circuitDiagramUrl} alt="Circuit Diagram" className="w-full max-w-md mx-auto" />
+        ) : (
+          <p>No circuit diagram available</p>
+        )}
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">Circuit Statistics</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -79,7 +85,6 @@ const ResultsDisplay = ({ output }) => {
           ))}
         </div>
       </div>
-
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">Solution Values</h3>
         <div className="grid grid-cols-3 gap-4">
@@ -94,10 +99,104 @@ const ResultsDisplay = ({ output }) => {
   );
 };
 
+// const ResultsDisplay = ({ output }) => {
+//   if (!output) return null;
+
+//   // Parse the output string to extract different sections
+//   const parseOutput = (outputStr) => {
+//     const sections = {
+//       netlistReport: [],
+//       parsedValues: [],
+//       equations: [],
+//       solutions: []
+//     };
+
+//     const lines = outputStr.split('\n');
+//     let currentSection = 'netlistReport';
+
+//     lines.forEach(line => {
+//       if (line.startsWith('Parsed Element Values:')) {
+//         currentSection = 'parsedValues';
+//       } else if (line.startsWith('[Eq(')) {
+//         currentSection = 'equations';
+//         // Clean up equation formatting
+//         const cleanedEq = line
+//           .replace('[Eq(', '')
+//           .replace(')]', '')
+//           .split('), Eq(')
+//           .map(eq => eq.replace(/\*\*/g, '^')
+//             .replace(/\*/g, '×')
+//             .trim());
+//         sections.equations = cleanedEq;
+//       } else if (/^-?\d+\.\d{4}\s*$/.test(line.trim())) {
+//         currentSection = 'solutions';
+//         sections.solutions.push(line.trim());
+//       } else if (currentSection === 'parsedValues' && line.includes(':')) {
+//         sections.parsedValues.push(line.trim());
+//       } else if (currentSection === 'netlistReport' && line.trim()) {
+//         sections.netlistReport.push(line.trim());
+//       }
+//     });
+
+//     return sections;
+//   };
+
+//   const { netlistReport, parsedValues, equations, solutions } = parseOutput(output);
+
+//   return (
+//     <div className="space-y-6">
+//       <div className="bg-white p-6 rounded-lg shadow">
+//         <h3 className="text-lg font-semibold mb-4">Circuit Statistics</h3>
+//         <div className="grid grid-cols-2 gap-4">
+//           {netlistReport.slice(0, 15).map((line, index) => (
+//             <div key={index} className="text-sm">
+//               {line}
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+
+//       <div className="bg-white p-6 rounded-lg shadow">
+//         <h3 className="text-lg font-semibold mb-4">Component Values</h3>
+//         <div className="grid grid-cols-3 gap-4">
+//           {parsedValues.map((value, index) => (
+//             <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+//               {value}
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+
+//       <div className="bg-white p-6 rounded-lg shadow">
+//         <h3 className="text-lg font-semibold mb-4">Circuit Equations</h3>
+//         <div className="space-y-2">
+//           {equations.map((eq, index) => (
+//             <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+//               {eq} = 0
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+
+//       <div className="bg-white p-6 rounded-lg shadow">
+//         <h3 className="text-lg font-semibold mb-4">Solution Values</h3>
+//         <div className="grid grid-cols-3 gap-4">
+//           {solutions.map((value, index) => (
+//             <div key={index} className="text-sm font-mono bg-gray-50 p-2 rounded">
+//               {`Nodal voltages and current in order: ${value}`}
+//             </div>
+//           ))}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
 export default function CircuitAnalyzer() {
   const [elements, setElements] = useState([]);
   const [equations, setEquations] = useState([]);
   const [activeTab, setActiveTab] = useState('builder');
+  const [circuitDiagramUrl, setCircuitDiagramUrl] = useState('');
 
   const elementTypes = [
     { type: 'R', name: 'Resistor', valueUnit: 'Ω' },
@@ -182,6 +281,8 @@ export default function CircuitAnalyzer() {
       if (data.status === 'success') {
         setEquations([data.results.output]);
         setActiveTab('results');
+          // Save the circuit diagram URL for display
+      setCircuitDiagramUrl(`http://localhost:5001${data.circuitDiagram}`);
       } else {
         setEquations([`Error: ${data.message}`]);
       }
@@ -354,7 +455,7 @@ export default function CircuitAnalyzer() {
       ) : (
         <div className="bg-gray-50 p-6 rounded">
           <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
-          <ResultsDisplay output={equations[0]} />
+          <ResultsDisplay output={equations[0]} circuitDiagramUrl={circuitDiagramUrl} />
         </div>
       )}
     </div>
